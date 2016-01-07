@@ -148,6 +148,9 @@ Class FileUpload {
         }
         self::$files = [];
         $files       = self::requestGet('ajax_uploaded_file');
+        if (!$files) {
+            return [];
+        }
         foreach ($files as $input_name => $files_list) {
             if (isset($files_list['upload_id'])) {
                 foreach ($files_list['upload_id'] as $file_id => $upload_id) {
