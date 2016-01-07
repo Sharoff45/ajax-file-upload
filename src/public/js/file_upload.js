@@ -66,7 +66,7 @@ var FILE_UPLOAD = {
                     $form = $this.closest('form');
                 $form.prepend('<input type="hidden" name="ajax_uploaded_file[' + $this.attr('name') + '][session_id][]" value="' + data.session_id + '" />');
                 $form.prepend('<input type="hidden" name="ajax_uploaded_file[' + $this.attr('name') + '][upload_id][]" value="' + data.upload_id + '" />');
-//                    $this.val('');
+                $this.val('');
             })
             .addClass('js-init-ajax-upload');
 
@@ -215,7 +215,6 @@ var FILE_UPLOAD = {
     }
 
 };
-
 
 $(document).ready(function () {
     $('body').trigger('file-upload');

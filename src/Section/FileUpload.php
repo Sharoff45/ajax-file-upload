@@ -3,27 +3,71 @@ namespace Sharoff\Component;
 
 Class FileUpload {
 
+    /**
+     * Временная папка для работы скрипта
+     * @var
+     */
     static protected $tmp_path;
+    /**
+     * Путь к загружженным файлам (объединенным) отностительно папки tmp
+     * @var string
+     */
     static protected $result_path = '/result/';
-    static protected $files       = null;
+    /**
+     * Список загруженных файлов
+     * @var null|array
+     */
+    static protected $files = null;
 
 
+    /**
+     * Указание временной папки для загрузки файлов
+     *
+     * @param $path
+     */
     static function setTmpPath($path) {
         self::$tmp_path = rtrim($path, '/') . '/file-upload/';
     }
 
+    /**
+     * Получение данных из суперглобального массива $_SERVER
+     *
+     * @param      $key
+     * @param null $default
+     *
+     * @return null
+     */
     static protected function serverGet($key, $default = null) {
         return isset($_SERVER[$key]) ? $_SERVER[$key] : $default;
     }
 
+    /**
+     * Получение данных из суперглобального массива $_REQUEST
+     *
+     * @param      $key
+     * @param null $default
+     *
+     * @return null
+     */
     static protected function requestGet($key, $default = null) {
         return isset($_REQUEST[$key]) ? $_REQUEST[$key] : $default;
     }
 
+    /**
+     * Получение данных из суперглобального массива $_FILES
+     *
+     * @param $key
+     *
+     * @return bool
+     */
     static protected function fileGet($key) {
         return isset($_FILES[$key]) ? $_FILES[$key] : false;
     }
 
+    /**
+     * Получить путь к папке с загруженными файлами
+     * @return string
+     */
     static protected function getResultPath() {
         $dir = self::$tmp_path . self::$result_path;
         if (!file_exists($dir)) {
@@ -32,12 +76,16 @@ Class FileUpload {
         return $dir;
     }
 
+    /**
+     * Проверка пост запроса на отправку файла и загрузка если он есть
+     * @return bool
+     */
     static function checkUpload() {
         if ('POST' !== self::serverGet('REQUEST_METHOD')) {
             return false;
         }
         if ('meta' == self::requestGet('type')) {
-            return self::getMetaData();
+            return self::saveMetaData();
         }
 
         $cnt_all       = (int)self::requestGet('cnt');
@@ -62,7 +110,12 @@ Class FileUpload {
         return true;
     }
 
-    static function getMetaData() {
+    /**
+     * Созранить META-данные файла
+     *
+     * @return bool
+     */
+    static function saveMetaData() {
         $session_id = self::requestGet('session_id');
         $upload_id  = self::requestGet('upload_id');
         if (!$session_id || !$upload_id) {
@@ -84,6 +137,11 @@ Class FileUpload {
         return true;
     }
 
+    /**
+     * Получить список всех загруженных файлов
+     * (Проверка POST данных, которые подставляются скриптом при инициализации)
+     * @return array|null
+     */
     static function getAllFiles() {
         if (!is_null(self::$files)) {
             return self::$files;
@@ -116,6 +174,14 @@ Class FileUpload {
         return self::$files;
     }
 
+    /**
+     * Получить список файлов по имени input[type=file]
+     * Каждый элемент результирующего массива будет в обертке FileInfo
+     *
+     * @param $name
+     *
+     * @return bool|array
+     */
     static function getFile($name) {
         if (is_null(self::$files)) {
             self::getAllFiles();
@@ -123,6 +189,15 @@ Class FileUpload {
         return isset(self::$files[$name]) ? self::$files[$name] : false;
     }
 
+    /**
+     * Проверка полной загрузки файла
+     *
+     * @param $session_id
+     * @param $upload_id
+     * @param $cnt_all
+     *
+     * @throws \Exception
+     */
     static protected function checkReady($session_id, $upload_id, $cnt_all) {
         $path = self::makePath($session_id, $upload_id);
         $cnt  = count(glob($path . '/*.*'));
@@ -140,6 +215,16 @@ Class FileUpload {
         }
     }
 
+    /***
+     * Сохраняем файл в результирующей папке
+     *
+     * @param $session_id
+     * @param $upload_id
+     * @param $cnt_all
+     *
+     * @return bool
+     * @throws \Exception
+     */
     static protected function saveFile($session_id, $upload_id, $cnt_all) {
         $path        = self::makePath($session_id, $upload_id);
         $result_file = self::getResultPath() . md5($session_id . $upload_id);
@@ -159,19 +244,36 @@ Class FileUpload {
                 unlink($file . '_complete');
             } else {
                 echo $file;
-                throw new Exception('Ошибка при формировании файла');
+                throw new \Exception('Ошибка при формировании файла');
             }
         }
 
         return true;
     }
 
+    /**
+     * Сохраняем часть файла во временной папке
+     *
+     * @param $file
+     * @param $current_index
+     * @param $session_id
+     * @param $upload_id
+     */
     static protected function savePartition($file, $current_index, $session_id, $upload_id) {
         $path = self::makePath($session_id, $upload_id, $current_index);
         copy($file, $path);
         file_put_contents($path . '_complete', ' ');
     }
 
+    /**
+     * Составляем путь ко временной части файла
+     *
+     * @param      $session_id
+     * @param      $upload_id
+     * @param null $current_index
+     *
+     * @return string
+     */
     static protected function makePath($session_id, $upload_id, $current_index = null) {
         $path = self::$tmp_path . '/' . md5($session_id) . '/' . md5($upload_id);
         if (!file_exists($path)) {
@@ -181,5 +283,36 @@ Class FileUpload {
         return is_null($current_index) ? $path : $path . '/' . $current_index . '.tmp';
     }
 
+
+    /**
+     * Очистка временной дирректории
+     *
+     * ВНИМАНИЕ АККУРАТНО! НЕОБХОДИМО УБЕДИТЬСЯ В ПРАВИЛЬНОСТИ УКАЗАНИЯ ПАПКИ TMP & RESULT
+     */
+    static function clearTmpDir() {
+        $dir = self::$tmp_path;
+        self::removeDir($dir);
+    }
+
+    /**
+     * Функция очистки папки (рекурсивно)
+     *
+     * @param $dir
+     */
+    static protected function removeDir($dir) {
+        $list = scandir($dir);
+        foreach ($list as $item) {
+            if ('.' == $item || '..' == $item) {
+                continue;
+            }
+            $file = rtrim($dir, '/') . '/' . $item;
+            if (is_dir($file)) {
+                self::removeDir($file);
+                rmdir($file);
+            } else {
+                unlink($file);
+            }
+        }
+    }
 
 }
