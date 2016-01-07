@@ -16,8 +16,8 @@ composer require sharoff/ajax-file-upload
 ~~~
 
 ### Инициализация элементов
+
 Для input тега необходимо добавить CSS класс: "js-ajax-upload"
-------
 Указание URL загрузки (JS):
 ~~~
 FILE_UPLOAD.upload_url = 'новый урл';
