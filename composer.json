@@ -1,0 +1,26 @@
+{
+    "name": "sharoff/ajax-file-upload",
+    "type": "library",
+    "homepage": "https://sharoff.org",
+    "authors": [
+        {
+            "name": "Сергей Кокшаров",
+            "email": "info@sharoff.org"
+        }
+    ],
+    "description": "Загрузка файлов по частям с помощью JQUERY + AJAX + PHP",
+    "version": "1.0.0",
+    "license": "Apache-2.0",
+    "require": {
+        "php": ">=5.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Sharoff\\Component\\": "src/Section/"
+        },
+        "files": [
+             "src/init.php"
+        ]
+    },
+    "minimum-stability": "dev"
+}
